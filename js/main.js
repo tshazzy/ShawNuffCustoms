@@ -30,6 +30,9 @@ navLinks.querySelectorAll('a').forEach(link => {
 });
 
 // ---- Booking Form Validation & Submission ----
+// Paste your Formspree endpoint below after signing up at formspree.io
+const FORMSPREE_ENDPOINT = 'https://formspree.io/f/xlgkaryk';
+
 const form        = document.getElementById('booking-form');
 const formSuccess = document.getElementById('form-success');
 
@@ -41,12 +44,6 @@ if (form) {
     const isValid = validateForm();
     if (!isValid) return;
 
-    // -------------------------------------------------------
-    // FORM SUBMISSION
-    // Right now the form just shows a success message locally.
-    // When you're ready to wire up real email delivery, see the
-    // README for options (Formspree, Netlify Forms, EmailJS).
-    // -------------------------------------------------------
     submitForm();
   });
 }
@@ -108,21 +105,34 @@ function clearErrors() {
 }
 
 function submitForm() {
-  const btn = form.querySelector('.btn-submit');
+  const btn     = form.querySelector('.btn-submit');
   const btnText = btn.querySelector('.btn-text');
 
-  // Loading state
   btn.disabled = true;
   btnText.textContent = 'Sending…';
 
-  // Simulate async (replace with real fetch when you have a backend / Formspree)
-  setTimeout(() => {
-    form.style.display = 'none';
-    formSuccess.classList.add('visible');
-
-    // Scroll to success message
-    formSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, 800);
+  fetch(FORMSPREE_ENDPOINT, {
+    method: 'POST',
+    body: new FormData(form),
+    headers: { 'Accept': 'application/json' }
+  })
+    .then(res => {
+      if (res.ok) {
+        form.style.display = 'none';
+        formSuccess.classList.add('visible');
+        formSuccess.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        return res.json().then(data => { throw new Error(data.error || 'Submission failed'); });
+      }
+    })
+    .catch(err => {
+      btnText.textContent = 'Send Request';
+      btn.disabled = false;
+      const errMsg = form.querySelector('.form-submit-error') || document.createElement('p');
+      errMsg.className = 'form-submit-error field-error';
+      errMsg.textContent = 'Something went wrong. Please try again or call us directly.';
+      btn.parentNode.insertBefore(errMsg, btn);
+    });
 }
 
 // ---- Scroll-reveal animation ----
@@ -184,6 +194,6 @@ sections.forEach(s => navObserver.observe(s));
 // Add active nav link style dynamically
 const navActiveStyle = document.createElement('style');
 navActiveStyle.textContent = `
-  .nav-links a.active:not(.nav-cta) { color: var(--gold); }
+  .nav-links a.active:not(.nav-cta) { color: var(--green); }
 `;
 document.head.appendChild(navActiveStyle);
